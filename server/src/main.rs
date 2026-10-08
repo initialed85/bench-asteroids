@@ -58,7 +58,6 @@ impl Rng {
 struct Input {
     rot: i8,
     thrust: bool,
-    fire: bool,
 }
 
 struct Player {
@@ -70,6 +69,7 @@ struct Player {
     vy: f32,
     angle: f32,
     input: Input,
+    want_fire: bool,
     alive: bool,
     score: u32,
     deaths: u32,
@@ -209,7 +209,8 @@ fn step(w: &mut World) {
         p.cooldown -= STEP;
         p.invuln -= STEP;
 
-        if p.input.fire && p.cooldown <= 0.0 && bullet_count < 60 {
+        if p.want_fire && p.cooldown <= 0.0 && bullet_count < 60 {
+            p.want_fire = false;
             p.cooldown = FIRE_CD;
             shots.push(Bullet {
                 id: w.next_id,
@@ -529,6 +530,7 @@ fn handle(mut stream: std::net::TcpStream, world: Arc<Mutex<World>>, web_dir: St
                 vy: 0.0,
                 angle: 0.0,
                 input: Input::default(),
+                want_fire: false,
                 alive: true,
                 score: 0,
                 deaths: 0,
@@ -558,7 +560,12 @@ fn handle(mut stream: std::net::TcpStream, world: Arc<Mutex<World>>, web_dir: St
                                     match cm {
                                         net::ClientMsg::Join { name } => p.name = name,
                                         net::ClientMsg::Input { rot, thrust, fire } => {
-                                            p.input = Input { rot, thrust, fire }
+                                            p.input = Input { rot, thrust };
+                                            // fire is an event, not a latched state: the client
+                                            // only reports presses, so a key-up never has to arrive
+                                            if fire {
+                                                p.want_fire = true;
+                                            }
                                         }
                                     }
                                 }

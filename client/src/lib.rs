@@ -35,10 +35,16 @@ struct View {
     smooth: HashMap<u32, Vec2>,
     last_rot: i8,
     last_thrust: bool,
+    fire_at: f64,
 }
 
 fn pt(x: f32, y: f32) -> Vec3 {
     Vec3::new(x, -y, 0.0)
+}
+
+// circle_2d takes an Isometry2d, so it needs the same y-flip as pt()
+fn iso(x: f32, y: f32) -> Isometry2d {
+    Isometry2d::from_translation(Vec2::new(x, -y))
 }
 
 fn col(c: u32, a: f32) -> Color {
@@ -183,11 +189,16 @@ fn pump(mut view: ResMut<View>, time: Res<Time>) {
     }
 }
 
-fn capture(mut view: ResMut<View>, input: Res<ButtonInput<KeyCode>>) {
+fn capture(mut view: ResMut<View>, input: Res<ButtonInput<KeyCode>>, time: Res<Time>) {
     let left = input.pressed(KeyCode::KeyA) || input.pressed(KeyCode::ArrowLeft);
     let right = input.pressed(KeyCode::KeyD) || input.pressed(KeyCode::ArrowRight);
     let thrust = input.pressed(KeyCode::KeyW) || input.pressed(KeyCode::ArrowUp);
-    let fire = input.just_pressed(KeyCode::Space);
+    // one event per press; holding repeats at the fire cooldown rate
+    let now = time.elapsed_secs_f64();
+    let fire = input.pressed(KeyCode::Space) && now >= view.fire_at;
+    if fire {
+        view.fire_at = now + 0.28;
+    }
 
     let rot = right as i8 - left as i8;
     if rot != view.last_rot || thrust != view.last_thrust || fire {
@@ -266,7 +277,7 @@ fn render(
 
     for b in &view.bullets {
         let Some(&c) = view.smooth.get(&b.id) else { continue };
-        gizmos.circle_2d(Isometry2d::from_translation(c), 3.0, col(FIRE, 1.0));
+        gizmos.circle_2d(iso(c.x, c.y), 3.0, col(FIRE, 1.0));
     }
 
     for p in &view.players {
@@ -290,7 +301,7 @@ fn render(
         }
 
         if !is_me {
-            gizmos.circle_2d(Isometry2d::from_translation(c), 20.0, col(SHIP, 0.25));
+            gizmos.circle_2d(iso(c.x, c.y), 20.0, col(SHIP, 0.25));
         }
     }
 
@@ -302,7 +313,7 @@ fn render(
         let base = if *size == 0 { 18.0 } else { RADIUS[*size as usize] };
         let r = base * (0.5 + age * 1.6);
         gizmos.circle_2d(
-            Isometry2d::from_translation(Vec2::new(*x, *y)),
+            iso(*x, *y),
             r,
             col(HIT, 1.0 - age / 0.45),
         );
