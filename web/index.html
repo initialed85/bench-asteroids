@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>benchy · asteroids</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b1218; overflow: hidden; }
+    body { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: #cfd8e3; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #hud { position: fixed; left: 14px; top: 12px; white-space: pre-line; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+    #keys { position: fixed; right: 14px; bottom: 12px; color: #7c8a99; }
+  </style>
+</head>
+<body>
+  <div id="hud"></div>
+  <div id="keys">W thrust · A/D turn · Space fire</div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

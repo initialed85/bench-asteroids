@@ -1,0 +1,11 @@
+[package]
+name = "benchy-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+benchy-common = { path = "../common" }
+serde_json = "1"
+tungstenite = "0.24"
+sha1 = "0.10"
+base64 = "0.22"
