@@ -1,3 +1,15 @@
+# bench-asteroids
+
+Running [Niko1221/Strata](https://github.com/Niko1221/Strata)
+
+```shell
+./Strata/engine/strata --serve --pack ./Strata-data/packs/iq2_xs --native ./Strata-data/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf --ple-gguf ./Strata-data/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf --expert-profile ./Strata/data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp ./Strata-data/mtp/rt --max-context 65536 --kv int8
+```
+
+- GPU: AMD Radeon, 16 GB
+- CPU: AMD Ryzen 5 5600X 6-Core Processor, 12 threads
+- RAM: 47 GB
+
 # benchy
 
 A tiny multiplayer asteroids. The client is Bevy 0.19 compiled to WASM (WebGL2,
