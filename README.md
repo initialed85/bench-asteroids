@@ -41,6 +41,8 @@ nice, works a treat; seems to be a bug with the projectiles though; they correct
 
 ---
 
+(this was a steering prompt, sent while it was still processing)
+
 ```
 not sure if you're tracking it btw- just re-testing; the projectiles originated from the correct location now, but the fire button seems to be sticky
 
