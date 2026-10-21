@@ -1,5 +1,27 @@
 # bench-asteroids
 
+Live: https://asteroids.dev.initialed85.cc — wasm client and the WebSocket sim in one
+container on port 11111, running in `home-dev` (Argo CD app `asteroids`, manifests in
+`home-ops/clusters/dev/applications/asteroids`).
+
+## Ship it
+
+```sh
+./build-tag-and-push.sh      # ./build.sh here, then docker build + push
+                             # -> initialed85/asteroids:latest and :<git-sha>
+```
+
+Success: the pod restarts itself once the new `:latest` is pushed, then
+
+```sh
+curl -s -o /dev/null -w "%{http_code}\n" https://asteroids.dev.initialed85.cc/
+kubectl --context home-dev -n asteroids get pod -l app=asteroids \
+  -o jsonpath='{.items[0].status.containerStatuses[0].imageID}'
+```
+
+Boot it in a browser with the headless Chromium recipe in `bench-flightsim/README.md`;
+`#hud` should read `connected ... 1 players` and the server log `joined as #N (player)`.
+
 Running [Niko1221/Strata](https://github.com/Niko1221/Strata)
 
 ```shell
