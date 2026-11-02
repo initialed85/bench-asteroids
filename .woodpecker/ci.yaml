@@ -1,0 +1,23 @@
+# The asteroids bench is a wasm client plus a native authoritative server, so the gate builds both:
+# `cargo test` covers the server and shared logic, and ./build.sh is the real check that the client
+# still compiles for wasm32, that the JS glue matches the crate, and that the server binary links.
+#
+# The repo pins wasm-bindgen 0.2.129 in Cargo.lock and build.sh knows the version, so the CI step
+# just calls it.
+steps:
+  - name: check
+    image: docker.io/library/rust:1.99.1
+    commands:
+      - cargo --version
+      - rustup target add wasm32-unknown-unknown
+      # ./build.sh fetches wasm-bindgen 0.2.129 (the version pinned in Cargo.lock) and wasm-opt into tools/
+      # itself when they are not on PATH, so the step needs no cache volume and no cargo install.
+      - cargo fmt --check
+      - cargo test
+      - ./build.sh
+      - ls -l web/generated/asteroids_bg.wasm target/release/asteroids-bench
+
+when:
+  - event: push
+    branch: master
+  - event: pull_request
