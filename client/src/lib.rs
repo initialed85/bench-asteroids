@@ -1,6 +1,6 @@
+use benchy_common as net;
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
-use benchy_common as net;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -97,7 +97,12 @@ fn connect(view: Res<View>) {
     let loc = win.location();
     let scheme = loc.protocol().unwrap_or_default();
     let host = loc.host().unwrap_or_default();
-    let url = format!("{}://{}{}", if scheme == "https:" { "wss" } else { "ws" }, host, "/ws");
+    let url = format!(
+        "{}://{}{}",
+        if scheme == "https:" { "wss" } else { "ws" },
+        host,
+        "/ws"
+    );
 
     let ws = match WebSocket::new(&url) {
         Ok(w) => w,
@@ -125,7 +130,9 @@ fn connect(view: Res<View>) {
     onopen.forget();
 
     let onmessage = Closure::wrap(Box::new(move |e: web_sys::MessageEvent| {
-        let Some(s) = e.data().as_string() else { return };
+        let Some(s) = e.data().as_string() else {
+            return;
+        };
         if let Ok(m) = serde_json::from_str::<net::ServerMsg>(&s) {
             INBOX.with(|q| q.borrow_mut().push(m));
         }
@@ -204,12 +211,7 @@ fn capture(mut view: ResMut<View>, input: Res<ButtonInput<KeyCode>>, time: Res<T
     if rot != view.last_rot || thrust != view.last_thrust || fire {
         view.last_rot = rot;
         view.last_thrust = thrust;
-        let s = serde_json::to_string(&net::ClientMsg::Input {
-            rot,
-            thrust,
-            fire,
-        })
-        .unwrap();
+        let s = serde_json::to_string(&net::ClientMsg::Input { rot, thrust, fire }).unwrap();
         OUTBOX.with(|q| q.borrow_mut().push(s));
     }
 }
@@ -258,14 +260,19 @@ fn render(
     }
 
     for a in &view.asteroids {
-        let Some(&c) = view.smooth.get(&a.id) else { continue };
+        let Some(&c) = view.smooth.get(&a.id) else {
+            continue;
+        };
         let r = RADIUS[a.size as usize];
         let n = a.shape.len();
         for i in 0..n {
             let a1 = a.angle + (i as f32) * std::f32::consts::TAU / (n as f32);
             let a2 = a.angle + ((i + 1) as f32) * std::f32::consts::TAU / (n as f32);
             gizmos.line(
-                pt(c.x + a1.cos() * r * a.shape[i], c.y + a1.sin() * r * a.shape[i]),
+                pt(
+                    c.x + a1.cos() * r * a.shape[i],
+                    c.y + a1.sin() * r * a.shape[i],
+                ),
                 pt(
                     c.x + a2.cos() * r * a.shape[(i + 1) % n],
                     c.y + a2.sin() * r * a.shape[(i + 1) % n],
@@ -276,12 +283,16 @@ fn render(
     }
 
     for b in &view.bullets {
-        let Some(&c) = view.smooth.get(&b.id) else { continue };
+        let Some(&c) = view.smooth.get(&b.id) else {
+            continue;
+        };
         gizmos.circle_2d(iso(c.x, c.y), 3.0, col(FIRE, 1.0));
     }
 
     for p in &view.players {
-        let Some(&c) = view.smooth.get(&p.id) else { continue };
+        let Some(&c) = view.smooth.get(&p.id) else {
+            continue;
+        };
         if !p.alive {
             continue;
         }
@@ -289,8 +300,14 @@ fn render(
         let color = if is_me { col(ME, 1.0) } else { col(SHIP, 0.75) };
 
         let nose = pt(c.x + p.angle.cos() * 16.0, c.y + p.angle.sin() * 16.0);
-        let left = pt(c.x + (p.angle + 2.4).cos() * 12.0, c.y + (p.angle + 2.4).sin() * 12.0);
-        let right = pt(c.x + (p.angle - 2.4).cos() * 12.0, c.y + (p.angle - 2.4).sin() * 12.0);
+        let left = pt(
+            c.x + (p.angle + 2.4).cos() * 12.0,
+            c.y + (p.angle + 2.4).sin() * 12.0,
+        );
+        let right = pt(
+            c.x + (p.angle - 2.4).cos() * 12.0,
+            c.y + (p.angle - 2.4).sin() * 12.0,
+        );
         gizmos.line(nose, left, color);
         gizmos.line(left, right, color);
         gizmos.line(right, nose, color);
@@ -310,19 +327,23 @@ fn render(
         if age > 0.45 {
             continue;
         }
-        let base = if *size == 0 { 18.0 } else { RADIUS[*size as usize] };
+        let base = if *size == 0 {
+            18.0
+        } else {
+            RADIUS[*size as usize]
+        };
         let r = base * (0.5 + age * 1.6);
-        gizmos.circle_2d(
-            iso(*x, *y),
-            r,
-            col(HIT, 1.0 - age / 0.45),
-        );
+        gizmos.circle_2d(iso(*x, *y), r, col(HIT, 1.0 - age / 0.45));
     }
 }
 
 fn hud(view: Res<View>, time: Res<Time>) {
-    let Some(doc) = web_sys::window().and_then(|w| w.document()) else { return };
-    let Some(el) = doc.get_element_by_id("hud") else { return };
+    let Some(doc) = web_sys::window().and_then(|w| w.document()) else {
+        return;
+    };
+    let Some(el) = doc.get_element_by_id("hud") else {
+        return;
+    };
 
     let me = view.players.iter().find(|p| p.id == view.me);
     let line1 = match me {
@@ -339,7 +360,11 @@ fn hud(view: Res<View>, time: Res<Time>) {
     let age = (time.elapsed_secs_f64() - view.last_rx) * 1000.0;
     let line2 = format!(
         "{}  ·  tick {}  ·  {} players  ·  state {} ms ago",
-        if connected { "connected" } else { "disconnected" },
+        if connected {
+            "connected"
+        } else {
+            "disconnected"
+        },
         view.tick,
         view.players.len(),
         age as i64

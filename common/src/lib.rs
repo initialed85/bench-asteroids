@@ -13,7 +13,10 @@ pub enum ClientMsg {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "t", rename_all = "lowercase")]
 pub enum ServerMsg {
-    Welcome { id: u32, name: String },
+    Welcome {
+        id: u32,
+        name: String,
+    },
     State {
         tick: u64,
         me: u32,

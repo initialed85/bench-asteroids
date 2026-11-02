@@ -1,4 +1,4 @@
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sha1::{Digest, Sha1};
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -268,7 +268,12 @@ fn step(w: &mut World) {
         let (x, y, size) = (w.asteroids[j].x, w.asteroids[j].y, w.asteroids[j].size);
         w.bullets[i].dead = true;
         w.asteroids[j].dead = true;
-        w.events.push(net::Event { kind: 1, x, y, size });
+        w.events.push(net::Event {
+            kind: 1,
+            x,
+            y,
+            size,
+        });
         if let Some(p) = w.players.iter_mut().find(|p| p.id == owner) {
             p.score += SCORE[size as usize];
         }
@@ -300,7 +305,13 @@ fn step(w: &mut World) {
         a.x += a.vx * STEP;
         a.y += a.vy * STEP;
         a.angle += a.spin * STEP;
-        bounce(&mut a.x, &mut a.y, &mut a.vx, &mut a.vy, RADIUS[a.size as usize]);
+        bounce(
+            &mut a.x,
+            &mut a.y,
+            &mut a.vx,
+            &mut a.vy,
+            RADIUS[a.size as usize],
+        );
     }
 
     let mut dead_players: Vec<usize> = Vec::new();
@@ -365,7 +376,11 @@ fn broadcast(w: &mut World) {
     let bullets: Vec<net::Bullet> = w
         .bullets
         .iter()
-        .map(|b| net::Bullet { id: b.id, x: b.x, y: b.y })
+        .map(|b| net::Bullet {
+            id: b.id,
+            x: b.x,
+            y: b.y,
+        })
         .collect();
     let events: Vec<net::Event> = w.events.clone();
 
@@ -449,7 +464,11 @@ fn http_err(stream: &mut std::net::TcpStream, code: u16, msg: &str) {
 fn serve(stream: &mut std::net::TcpStream, path: &str, web_dir: &str, gzip: bool) {
     let rel = path.split('?').next().unwrap_or("/");
     let rel = rel.trim_start_matches('/');
-    let rel = if rel.is_empty() || rel == "/" { "index.html" } else { rel };
+    let rel = if rel.is_empty() || rel == "/" {
+        "index.html"
+    } else {
+        rel
+    };
     if rel.contains("..") {
         http_err(stream, 400, "bad path");
         return;
@@ -459,7 +478,16 @@ fn serve(stream: &mut std::net::TcpStream, path: &str, web_dir: &str, gzip: bool
     let (body, encoded) = if gzip && std::fs::exists(&gz_path).unwrap_or(false) {
         match std::fs::read(&gz_path) {
             Ok(g) => (g, true),
-            Err(_) => (match std::fs::read(&full) { Ok(b) => b, Err(_) => { http_err(stream, 404, "not found"); return; } }, false),
+            Err(_) => (
+                match std::fs::read(&full) {
+                    Ok(b) => b,
+                    Err(_) => {
+                        http_err(stream, 404, "not found");
+                        return;
+                    }
+                },
+                false,
+            ),
         }
     } else {
         match std::fs::read(&full) {
@@ -480,7 +508,11 @@ fn serve(stream: &mut std::net::TcpStream, path: &str, web_dir: &str, gzip: bool
         "png" => "image/png",
         _ => "application/octet-stream",
     };
-    let encoding = if encoded { "Content-Encoding: gzip\r\n" } else { "" };
+    let encoding = if encoded {
+        "Content-Encoding: gzip\r\n"
+    } else {
+        ""
+    };
     write!(
         stream,
         "HTTP/1.1 200 OK\r\nContent-Type: {ctype}\r\nContent-Length: {}\r\n{encoding}Cache-Control: no-cache\r\nConnection: close\r\n\r\n",
