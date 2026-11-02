@@ -12,8 +12,17 @@ steps:
       - rustup target add wasm32-unknown-unknown
       # ./build.sh fetches wasm-bindgen 0.2.129 (the version pinned in Cargo.lock) and wasm-opt into tools/
       # itself when they are not on PATH, so the step needs no cache volume and no cargo install.
+      # `cargo fmt --check` fails closed on this image: rust:1.99.1 ships without the rustfmt
+      # component (measured: `cargo fmt --version` -> "error: 'cargo-fmt' is not installed for the
+      # toolchain '1.99.1'"), and unlike the wasm benches there is no rust-toolchain.toml here to
+      # pull it in. The 1.97.1 benches do have one, which is why their fmt passes.
+      - rustup component add rustfmt
       - cargo fmt --check
-      - cargo test
+      # the client is a wasm target: host-compiling it drags bevy/winit to wayland-client, which the
+      # rust image has no headers for (measured: "The file `wayland-client.pc` needs to be installed
+      # and the PKG_CONFIG_PATH environment variable must contain its parent directory"). ./build.sh
+      # below compiles the client for wasm32 properly, which is the check that means something.
+      - cargo test --workspace --exclude benchy-client
       - ./build.sh
       - ls -l web/generated/asteroids_bg.wasm target/release/asteroids-bench
 
