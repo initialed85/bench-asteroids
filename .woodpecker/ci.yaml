@@ -7,12 +7,19 @@
 steps:
   - name: check
     image: docker.io/library/rust:1.99.1
-    # The namespace LimitRange gives an unmarked step 1 Gi (default 1Gi / max 4Gi in
+    # The namespace LimitRange gives an unmarked step 1 Gi (default 1Gi in
     # clusters/dev/applications/woodpecker/limits.yaml) and this step OOMs inside it: bench-flightsim
     # pipeline 2 died with exit 137 and "received oom kill" partway through `Compiling bevy_reflect`.
     # The server crate uses bevy_ecs too, so even a wasm-only repo pays the full bevy graph here.
-    # Two CPUs as well as 4 Gi: rustc sizes its job count from available_parallelism, which reads the
-    # cgroup, so the old 1 CPU default was not the ceiling on parallelism that it looked like.
+    # Two CPUs as well as 8 Gi: rustc sizes its job count from available_parallelism, which reads the
+    # cgroup, so the old 1 CPU default was not the ceiling on parallelism that it looked like. 4 Gi,
+    # the previous LimitRange max, was still not enough (pipeline 3 OOMed compiling bevy_pbr), so the
+    # ceiling moved to 8 Gi and the step asks for it.
+    environment:
+      # Debuginfo is the dominant memory cost of a Bevy dev build and cargo test uses the dev profile;
+      # turning it off is the single biggest lever on peak RSS here and it halves the build time.
+      # Backtraces in test failures lose line detail, which is the trade being made.
+      CARGO_PROFILE_DEV_DEBUG: "0"
     backend_options:
       kubernetes:
         resources:
@@ -21,7 +28,7 @@ steps:
             memory: 1Gi
           limits:
             cpu: "2"
-            memory: 4Gi
+            memory: 8Gi
     commands:
       - cargo --version
       - rustup target add wasm32-unknown-unknown
@@ -39,7 +46,7 @@ steps:
       # below compiles the client for wasm32 properly, which is the check that means something.
       - cargo test --workspace --exclude benchy-client
       - ./build.sh
-      - ls -l web/generated/asteroids_bg.wasm target/release/asteroids-bench
+      - ls -l web/benchy_client_bg.wasm web/benchy_client.js target/release/benchy-server
 
 when:
   - event: push
